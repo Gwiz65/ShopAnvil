@@ -7,5 +7,5 @@ A mod for Wurm Unlimited Server that adds a ground usable small anvil named "sho
 - Shop Anvil features:
   - created just like a small anvil with either a hammer or mallet and 2.0kg of any metal.
   - only usable on ground and can be planted
-  -  can be used instead of small anvil in all recipes
+  -  can be used instead of small anvil in all crafting recipes
     
