@@ -33,6 +33,7 @@ import java.util.logging.Logger;
 
 import org.gotti.wurmunlimited.modloader.interfaces.ItemTemplatesCreatedListener;
 import org.gotti.wurmunlimited.modloader.interfaces.ServerStartedListener;
+import org.gotti.wurmunlimited.modloader.interfaces.Versioned;
 import org.gotti.wurmunlimited.modloader.interfaces.WurmServerMod;
 import org.gotti.wurmunlimited.modsupport.ItemTemplateBuilder;
 
@@ -46,8 +47,9 @@ import com.wurmonline.server.items.ItemTemplate;
 import com.wurmonline.server.items.ItemTypes;
 
 public class ShopAnvil
-		implements WurmServerMod, ServerStartedListener, ItemTemplatesCreatedListener, ItemTypes, MiscConstants {
+		implements WurmServerMod, ServerStartedListener, ItemTemplatesCreatedListener, ItemTypes, MiscConstants, Versioned {
 
+	private static final String version = "1.1";
 	private static Logger logger = Logger.getLogger(ShopAnvil.class.getName());
 	private int shopAnvilId;
 
@@ -597,5 +599,10 @@ public class ShopAnvil
 				CreationCategories.TOOL_PARTS);
 		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 698, 1369, false, true, 10.0f, false, false,
 				CreationCategories.TOOL_PARTS);
+	}
+
+	@Override
+	public String getVersion() {
+		return version;
 	}
 }
