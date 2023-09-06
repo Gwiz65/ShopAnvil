@@ -31,6 +31,9 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.wurmonline.server.items.*;
+import org.gotti.wurmunlimited.modloader.ReflectionUtil;
+import org.gotti.wurmunlimited.modloader.classhooks.HookException;
 import org.gotti.wurmunlimited.modloader.interfaces.ItemTemplatesCreatedListener;
 import org.gotti.wurmunlimited.modloader.interfaces.ServerStartedListener;
 import org.gotti.wurmunlimited.modloader.interfaces.WurmServerMod;
@@ -38,12 +41,6 @@ import org.gotti.wurmunlimited.modsupport.ItemTemplateBuilder;
 
 import com.wurmonline.server.Features;
 import com.wurmonline.server.MiscConstants;
-import com.wurmonline.server.items.AdvancedCreationEntry;
-import com.wurmonline.server.items.CreationCategories;
-import com.wurmonline.server.items.CreationEntryCreator;
-import com.wurmonline.server.items.CreationRequirement;
-import com.wurmonline.server.items.ItemTemplate;
-import com.wurmonline.server.items.ItemTypes;
 
 public class ShopAnvil
 		implements WurmServerMod, ServerStartedListener, ItemTemplatesCreatedListener, ItemTypes, MiscConstants {
@@ -100,502 +97,60 @@ public class ShopAnvil
 					CreationCategories.TOOLS);
 		}
 
-		// add recipes for everything that uses small anvil to use shop anvil too
-		logger.log(Level.INFO, "Adding Shop Anvil to all recipies that use the small anvil.");
-		if (Features.Feature.METALLIC_ITEMS.isEnabled()) {
-			CreationEntryCreator.createMetallicEntries(10010, shopAnvilId, 46, 147, false, true, 0.0f, false, false,
-					CreationCategories.BLADES);
-			CreationEntryCreator.createMetallicEntries(10011, shopAnvilId, 46, 89, false, true, 0.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createMetallicEntries(10011, shopAnvilId, 46, 523, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-		} else {
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 46, 147, false, true, 0.0f, false, false,
-					CreationCategories.BLADES);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 694, 147, false, true, 0.0f, false, false,
-					CreationCategories.BLADES);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 837, 147, false, true, 0.0f, false, false,
-					CreationCategories.BLADES);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 698, 147, false, true, 0.0f, false, false,
-					CreationCategories.BLADES);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 205, 147, false, true, 0.0f, false, false,
-					CreationCategories.BLADES);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 46, 89, false, true, 0.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 46, 523, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 694, 89, false, true, 0.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 694, 523, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 837, 89, false, true, 0.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 837, 523, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 205, 89, false, true, 0.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 205, 523, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 698, 89, false, true, 0.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 698, 523, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
+		for (CreationEntry entry : CreationMatrix.getInstance().getSimpleEntries()) {
+			if(entry instanceof SimpleCreationEntry) {
+				SimpleCreationEntry simple = (SimpleCreationEntry) entry;
+				if(simple.getObjectSource() == ItemList.anvilSmall) {
+					try {
+						float percentageLost = ReflectionUtil.getPrivateField(simple, ReflectionUtil.getField(SimpleCreationEntry.class, "percentageLost"));
+						SimpleCreationEntry simpleNew = (SimpleCreationEntry) CreationEntryCreator.createSimpleEntry(simple.getPrimarySkill(), shopAnvilId, simple.getObjectTarget(), simple.getObjectCreated(), simple.depleteSource, simple.depleteTarget, percentageLost, simple.depleteEqually, simple.isCreateOnGround(), simple.getCustomCutOffChance(), simple.getMinimumSkillRequirement(), simple.getCategory());
+						simpleNew.setDeityRestriction(simple.getDeityRestriction());
+						simpleNew.setObjectSourceMaterial(simple.getObjectSourceMaterial());
+						simpleNew.setObjectTargetMaterial(simple.getObjectTargetMaterial());
+						simpleNew.setUseTemplateWeight(simple.getUseTempalateWeight());
+						simpleNew.setColouringCreation(simple.isColouringCreation());
+						simpleNew.setDepleteFromSource(simple.getDepleteFromSource());
+						simpleNew.setDepleteFromTarget(simple.getDepleteFromTarget());
+						simpleNew.setFinalMaterial(simple.getFinalMaterial());
+						simpleNew.setIsEpicBuildMissionTarget(simple.isCreateEpicTargetMission);
+						simpleNew.isOnlyCreateEpicTargetMission = simple.isOnlyCreateEpicTargetMission;
+					} catch (NoSuchFieldException | IllegalAccessException e) {
+						throw new HookException(e);
+					}
+				}
+			} else {
+				logger.warning("Entry in simple entries was not SimpleCreationEntry. source:"+entry.getObjectSource()+", target:"+entry.getObjectTarget()+", created"+entry.getObjectCreated());
+			}
 		}
-		if (Features.Feature.METALLIC_ITEMS.isEnabled()) {
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 215, false, true, 400.0f, false, false,
-					CreationCategories.TOOLS);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 259, false, true, 10.0f, false, false,
-					CreationCategories.COOKING_UTENSILS);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 257, false, true, 10.0f, false, false,
-					CreationCategories.COOKING_UTENSILS);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 258, false, true, 10.0f, false, false,
-					CreationCategories.COOKING_UTENSILS);
-		} else {
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 215, false, true, 400.0f, false, false,
-					CreationCategories.TOOLS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 259, false, true, 10.0f, false, false,
-					CreationCategories.COOKING_UTENSILS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 257, false, true, 10.0f, false, false,
-					CreationCategories.COOKING_UTENSILS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 258, false, true, 10.0f, false, false,
-					CreationCategories.COOKING_UTENSILS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 45, 259, false, true, 10.0f, false, false,
-					CreationCategories.COOKING_UTENSILS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 45, 257, false, true, 10.0f, false, false,
-					CreationCategories.COOKING_UTENSILS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 45, 258, false, true, 10.0f, false, false,
-					CreationCategories.COOKING_UTENSILS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 47, 216, false, true, 400.0f, false, false,
-					CreationCategories.TOOLS);
+
+		for (CreationEntry entry : CreationMatrix.getInstance().getAdvancedEntries()) {
+			if(entry instanceof AdvancedCreationEntry) {
+				AdvancedCreationEntry advanced = (AdvancedCreationEntry) entry;
+				if(advanced.getObjectSource() == ItemList.anvilSmall) {
+					try {
+						float percentageLost = ReflectionUtil.getPrivateField(advanced, ReflectionUtil.getField(AdvancedCreationEntry.class, "percentageLost"));
+						AdvancedCreationEntry advancedNew = CreationEntryCreator.createAdvancedEntry(advanced.getPrimarySkill(), shopAnvilId, advanced.getObjectTarget(), advanced.getObjectCreated(), advanced.depleteSource, advanced.depleteTarget, percentageLost, advanced.depleteEqually, advanced.isCreateOnGround(), advanced.getCustomCutOffChance(), advanced.getMinimumSkillRequirement(), advanced.getCategory());
+						advancedNew.setColouringCreation(advanced.isColouringCreation());
+						advancedNew.setDeityRestriction(advanced.getDeityRestriction());
+						advancedNew.setDepleteFromSource(advanced.getDepleteFromSource());
+						advancedNew.setDepleteFromTarget(advanced.getDepleteFromTarget());
+						advancedNew.setFinalMaterial(advanced.getFinalMaterial());
+						advancedNew.setIsEpicBuildMissionTarget(advanced.isCreateEpicTargetMission);
+						advancedNew.setObjectSourceMaterial(advanced.getObjectSourceMaterial());
+						advancedNew.setObjectTargetMaterial(advanced.getObjectTargetMaterial());
+						advancedNew.setUseTemplateWeight(advanced.getUseTempalateWeight());
+						advancedNew.isOnlyCreateEpicTargetMission = advanced.isOnlyCreateEpicTargetMission;
+
+						for (CreationRequirement requirement : advanced.getRequirements()) {
+							advancedNew.addRequirement(requirement);
+						}
+					} catch (NoSuchFieldException | IllegalAccessException e) {
+						throw new HookException(e);
+					}
+				}
+			} else {
+				logger.warning("Entry in advanced entries was not AdvancedCreationEntry. source:"+entry.getObjectSource()+", target:"+entry.getObjectTarget()+", created"+entry.getObjectCreated());
+			}
 		}
-		CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 47, 772, false, true, 0.0f, false, false,
-				CreationCategories.CONSTRUCTION_MATERIAL);
-		CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 773, false, true, 0.0f, false, false,
-				CreationCategories.CONSTRUCTION_MATERIAL);
-		CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 220, 1298, false, true, 0.0f, false, false,
-				CreationCategories.CONSTRUCTION_MATERIAL);
-		CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 49, 1299, false, true, 0.0f, false, false,
-				CreationCategories.CONSTRUCTION_MATERIAL);
-		CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 205, 597, false, true, 0.0f, false, false,
-				CreationCategories.CONSTRUCTION_MATERIAL);
-		CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 44, 599, false, true, 0.0f, false, false,
-				CreationCategories.CONSTRUCTION_MATERIAL);
-		CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 45, 598, false, true, 0.0f, false, false,
-				CreationCategories.CONSTRUCTION_MATERIAL);
-		if (Features.Feature.METALLIC_ITEMS.isEnabled()) {
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 127, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createMetallicEntries(10010, shopAnvilId, 46, 154, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createMetallicEntries(10010, shopAnvilId, 46, 389, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createMetallicEntries(10010, shopAnvilId, 46, 494, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createMetallicEntries(10010, shopAnvilId, 46, 709, false, true, 0.0f, false, false,
-					CreationCategories.BLADES);
-			CreationEntryCreator.createMetallicEntries(10010, shopAnvilId, 46, 391, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createMetallicEntries(10010, shopAnvilId, 46, 393, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createMetallicEntries(10010, shopAnvilId, 46, 395, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createMetallicEntries(10010, shopAnvilId, 46, 125, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createMetallicEntries(10010, shopAnvilId, 46, 126, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 734, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 720, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 735, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-		} else {
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 127, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 46, 154, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 46, 389, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 46, 494, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 46, 709, false, true, 0.0f, false, false,
-					CreationCategories.BLADES);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 205, 709, false, true, 0.0f, false, false,
-					CreationCategories.BLADES);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 698, 709, false, true, 0.0f, false, false,
-					CreationCategories.BLADES);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 694, 709, false, true, 0.0f, false, false,
-					CreationCategories.BLADES);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 837, 709, false, true, 0.0f, false, false,
-					CreationCategories.BLADES);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 46, 391, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 46, 393, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 205, 393, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 694, 393, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 837, 393, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 698, 393, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 46, 395, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 734, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 221, 720, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 735, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 46, 125, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 46, 126, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 205, 126, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 698, 126, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 694, 126, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 837, 126, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-		}
-		CreationEntryCreator.createSimpleEntry(10010, shopAnvilId, 45, 793, false, true, 0.0f, false, false,
-				CreationCategories.TOOL_PARTS);
-		if (Features.Feature.METALLIC_ITEMS.isEnabled()) {
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 131, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 517, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 444, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createMetallicEntries(10011, shopAnvilId, 46, 451, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createMetallicEntries(10011, shopAnvilId, 46, 452, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createMetallicEntries(10011, shopAnvilId, 46, 123, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 219, false, true, 0.0f, false, false,
-					CreationCategories.TOOLS);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 701, false, true, 0.0f, false, false,
-					CreationCategories.TOOLS);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 124, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 24, false, true, 0.0f, false, false,
-					CreationCategories.TOOLS);
-		} else {
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 131, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 205, 131, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 47, 131, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 45, 131, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 44, 131, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 223, 131, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 694, 131, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 837, 131, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 698, 131, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 517, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 205, 517, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 47, 517, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 45, 517, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 44, 517, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 223, 517, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 444, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 205, 444, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 47, 444, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 45, 444, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 44, 444, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 223, 444, false, true, 10.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 46, 451, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 698, 451, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 694, 451, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 837, 451, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 205, 451, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 47, 451, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 45, 451, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 44, 451, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 223, 451, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 46, 452, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 698, 452, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 694, 452, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 837, 452, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 205, 452, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 47, 452, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 45, 452, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 44, 452, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 223, 452, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 46, 123, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 205, 123, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 694, 123, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 837, 123, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 698, 123, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 219, false, true, 0.0f, false, false,
-					CreationCategories.TOOLS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 701, false, true, 0.0f, false, false,
-					CreationCategories.TOOLS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 124, false, true, 0.0f, false, false,
-					CreationCategories.TOOL_PARTS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 24, false, true, 0.0f, false, false,
-					CreationCategories.TOOLS);
-		}
-		CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 217, false, true, 0.0f, false, false,
-				CreationCategories.CONSTRUCTION_MATERIAL);
-		CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 218, false, true, 0.0f, false, false,
-				CreationCategories.CONSTRUCTION_MATERIAL);
-		if (Features.Feature.METALLIC_ITEMS.isEnabled()) {
-			CreationEntryCreator.createMetallicEntries(10043, shopAnvilId, 46, 228, false, true, 0.0f, false, false,
-					CreationCategories.LIGHTS_AND_LAMPS);
-			CreationEntryCreator.createMetallicEntries(10043, shopAnvilId, 46, 232, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createMetallicEntries(10043, shopAnvilId, 46, 229, false, true, 0.0f, false, false,
-					CreationCategories.JEWELRY);
-		} else {
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 44, 229, false, true, 0.0f, false, false,
-					CreationCategories.JEWELRY);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 45, 229, false, true, 0.0f, false, false,
-					CreationCategories.JEWELRY);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 44, 228, false, true, 0.0f, false, false,
-					CreationCategories.LIGHTS_AND_LAMPS);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 45, 228, false, true, 0.0f, false, false,
-					CreationCategories.LIGHTS_AND_LAMPS);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 46, 228, false, true, 0.0f, false, false,
-					CreationCategories.LIGHTS_AND_LAMPS);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 698, 228, false, true, 0.0f, false, false,
-					CreationCategories.LIGHTS_AND_LAMPS);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 694, 228, false, true, 0.0f, false, false,
-					CreationCategories.LIGHTS_AND_LAMPS);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 837, 228, false, true, 0.0f, false, false,
-					CreationCategories.LIGHTS_AND_LAMPS);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 47, 228, false, true, 0.0f, false, false,
-					CreationCategories.LIGHTS_AND_LAMPS);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 44, 232, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 45, 232, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 46, 232, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 47, 232, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 223, 232, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 221, 232, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 49, 232, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 205, 232, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 694, 232, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 837, 232, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-			CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 698, 232, false, true, 0.0f, false, false,
-					CreationCategories.CONSTRUCTION_MATERIAL);
-		}
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 44, 227, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 45, 227, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 1411, 227, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 44, 505, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 45, 505, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 1411, 505, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 44, 506, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 45, 506, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 1411, 506, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 44, 507, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 45, 507, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 1411, 507, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 44, 508, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 45, 508, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 1411, 508, false, true, 0.0f, false, false,
-				CreationCategories.STATUETTES);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 44, 230, false, true, 0.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 45, 230, false, true, 0.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 1411, 230, false, true, 0.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 44, 231, false, true, 0.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 45, 231, false, true, 0.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 1411, 231, false, true, 0.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 694, 231, false, true, 0.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 837, 231, false, true, 0.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 698, 231, false, true, 0.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 44, 297, false, true, 100.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 45, 297, false, true, 100.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 1411, 297, false, true, 100.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 698, 297, false, true, 100.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 694, 297, false, true, 100.0f, false, false,
-				CreationCategories.JEWELRY);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 837, 297, false, true, 100.0f, false, false,
-				CreationCategories.JEWELRY);
-		if (Features.Feature.METALLIC_ITEMS.isEnabled()) {
-			CreationEntryCreator.createMetallicEntries(10034, shopAnvilId, 46, 167, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createMetallicEntries(10034, shopAnvilId, 46, 194, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createMetallicEntries(10034, shopAnvilId, 46, 193, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createMetallicEntries(10034, shopAnvilId, 46, 463, false, true, 0.0f, false, false, 0,
-					25.0, CreationCategories.TOOLS);
-			CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 185, false, true, 0.0f, false, true,
-					CreationCategories.TOOLS);
-		} else {
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 46, 167, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 46, 194, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 46, 193, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 694, 167, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 694, 194, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 694, 193, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 837, 167, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 837, 194, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 837, 193, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 698, 167, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 698, 194, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 698, 193, false, true, 0.0f, false, false,
-					CreationCategories.LOCKS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 46, 463, false, true, 0.0f, false, false, 0,
-					25.0, CreationCategories.TOOLS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 205, 463, false, true, 0.0f, false, false, 0,
-					25.0, CreationCategories.TOOLS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 694, 463, false, true, 0.0f, false, false, 0,
-					25.0, CreationCategories.TOOLS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 837, 463, false, true, 0.0f, false, false, 0,
-					25.0, CreationCategories.TOOLS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 698, 463, false, true, 0.0f, false, false, 0,
-					25.0, CreationCategories.TOOLS);
-			CreationEntryCreator.createSimpleEntry(10034, shopAnvilId, 47, 463, false, true, 0.0f, false, false, 0,
-					25.0, CreationCategories.TOOLS);
-			CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 46, 185, false, true, 0.0f, false, true,
-					CreationCategories.TOOLS);
-		}
-		CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 221, 902, false, true, 0.0f, false, false,
-				CreationCategories.TOOL_PARTS);
-		CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 223, 904, false, true, 0.0f, false, false,
-				CreationCategories.TOOL_PARTS);
-		CreationEntryCreator.createSimpleEntry(10015, shopAnvilId, 220, 1166, false, true, 0.0f, false, false,
-				CreationCategories.TOOLS);
-		CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 46, 1126, false, true, 10.0f, false, false,
-				CreationCategories.WEAPON_HEADS);
-		final AdvancedCreationEntry washingBowl = CreationEntryCreator.createAdvancedEntry(10015, shopAnvilId, 221, 895,
-				false, true, 0.0f, false, true, 0, 30.0, CreationCategories.FURNITURE);
-		washingBowl.setDepleteFromTarget(1500);
-		washingBowl.addRequirement(new CreationRequirement(1, 897, 3, true));
-		washingBowl.addRequirement(new CreationRequirement(2, 77, 1, true));
-		if (Features.Feature.METALLIC_ITEMS.isEnabled()) {
-			CreationEntryCreator.createMetallicEntries(10011, shopAnvilId, 698, 935, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-		} else {
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 698, 935, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 694, 935, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 837, 935, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 205, 935, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 47, 935, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 45, 935, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 44, 935, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-			CreationEntryCreator.createSimpleEntry(10011, shopAnvilId, 223, 935, false, true, 10.0f, false, false,
-					CreationCategories.WEAPON_HEADS);
-		}
-		CreationEntryCreator.createAdvancedMetalicEntry(10015, shopAnvilId, 220, 1341, false, true, 0.0f, false, false,
-				CreationCategories.TOOLS, new CreationRequirement(1, 790, 3, true),
-				new CreationRequirement(2, 100, 1, true));
-		CreationEntryCreator.createMetallicEntries(10043, shopAnvilId, 46, 1345, false, true, 0.0f, false, false,
-				CreationCategories.TOOLS);
-		CreationEntryCreator.createMetallicEntries(10015, shopAnvilId, 46, 1357, false, true, 1000.0f, false, false,
-				CreationCategories.TOOL_PARTS);
-		CreationEntryCreator.createMetallicEntries(10043, shopAnvilId, 46, 1368, false, true, 10.0f, false, false,
-				CreationCategories.TOOL_PARTS);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 205, 1369, false, true, 10.0f, false, false,
-				CreationCategories.TOOL_PARTS);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 837, 1369, false, true, 10.0f, false, false,
-				CreationCategories.TOOL_PARTS);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 694, 1369, false, true, 10.0f, false, false,
-				CreationCategories.TOOL_PARTS);
-		CreationEntryCreator.createSimpleEntry(10043, shopAnvilId, 698, 1369, false, true, 10.0f, false, false,
-				CreationCategories.TOOL_PARTS);
 	}
 }
