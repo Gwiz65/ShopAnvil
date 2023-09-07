@@ -43,16 +43,17 @@ import org.gotti.wurmunlimited.modsupport.ItemTemplateBuilder;
 import com.wurmonline.server.Features;
 import com.wurmonline.server.MiscConstants;
 
-public class ShopAnvil
-		implements WurmServerMod, ServerStartedListener, ItemTemplatesCreatedListener, ItemTypes, MiscConstants, Versioned {
+public class ShopAnvil implements WurmServerMod, ServerStartedListener, ItemTemplatesCreatedListener, ItemTypes,
+		MiscConstants, Versioned {
 
 	private static final String version = "1.1";
 	private static Logger logger = Logger.getLogger(ShopAnvil.class.getName());
 	private int shopAnvilId;
+	private int recipesLoaded = 0;
 
 	@Override
 	public void onItemTemplatesCreated() {
-		logger.log(Level.INFO, "Adding Shop Anvil template.");
+		logger.log(Level.INFO, "Adding Shop Anvil item template.");
 		// create our new item template and build it
 		try {
 			ItemTemplateBuilder itemTemplateBuilder = new ItemTemplateBuilder("shop.anvil");
@@ -85,8 +86,8 @@ public class ShopAnvil
 
 	@Override
 	public void onServerStarted() {
+
 		// add recipes for creating shop anvil
-		logger.log(Level.INFO, "Adding Shop Anvil to recipies.");
 		if (Features.Feature.METALLIC_ITEMS.isEnabled()) {
 			CreationEntryCreator.createMetallicEntries(10015, 63, 46, shopAnvilId, false, true, 0.0f, false, false,
 					CreationCategories.TOOLS);
@@ -98,14 +99,21 @@ public class ShopAnvil
 			CreationEntryCreator.createSimpleEntry(10015, 62, 46, shopAnvilId, false, true, 0.0f, false, false,
 					CreationCategories.TOOLS);
 		}
+		logger.log(Level.INFO, "Shop Anvil added to crafting recipes.");
 
+		// duplicate recipes that use small anvil
 		for (CreationEntry entry : CreationMatrix.getInstance().getSimpleEntries()) {
-			if(entry instanceof SimpleCreationEntry) {
+			if (entry instanceof SimpleCreationEntry) {
 				SimpleCreationEntry simple = (SimpleCreationEntry) entry;
-				if(simple.getObjectSource() == ItemList.anvilSmall) {
+				if (simple.getObjectSource() == ItemList.anvilSmall) {
 					try {
-						float percentageLost = ReflectionUtil.getPrivateField(simple, ReflectionUtil.getField(SimpleCreationEntry.class, "percentageLost"));
-						SimpleCreationEntry simpleNew = (SimpleCreationEntry) CreationEntryCreator.createSimpleEntry(simple.getPrimarySkill(), shopAnvilId, simple.getObjectTarget(), simple.getObjectCreated(), simple.depleteSource, simple.depleteTarget, percentageLost, simple.depleteEqually, simple.isCreateOnGround(), simple.getCustomCutOffChance(), simple.getMinimumSkillRequirement(), simple.getCategory());
+						float percentageLost = ReflectionUtil.getPrivateField(simple,
+								ReflectionUtil.getField(SimpleCreationEntry.class, "percentageLost"));
+						SimpleCreationEntry simpleNew = (SimpleCreationEntry) CreationEntryCreator.createSimpleEntry(
+								simple.getPrimarySkill(), shopAnvilId, simple.getObjectTarget(),
+								simple.getObjectCreated(), simple.depleteSource, simple.depleteTarget, percentageLost,
+								simple.depleteEqually, simple.isCreateOnGround(), simple.getCustomCutOffChance(),
+								simple.getMinimumSkillRequirement(), simple.getCategory());
 						simpleNew.setDeityRestriction(simple.getDeityRestriction());
 						simpleNew.setObjectSourceMaterial(simple.getObjectSourceMaterial());
 						simpleNew.setObjectTargetMaterial(simple.getObjectTargetMaterial());
@@ -116,22 +124,27 @@ public class ShopAnvil
 						simpleNew.setFinalMaterial(simple.getFinalMaterial());
 						simpleNew.setIsEpicBuildMissionTarget(simple.isCreateEpicTargetMission);
 						simpleNew.isOnlyCreateEpicTargetMission = simple.isOnlyCreateEpicTargetMission;
+						this.recipesLoaded++;
 					} catch (NoSuchFieldException | IllegalAccessException e) {
 						throw new HookException(e);
 					}
 				}
-			} else {
-				logger.warning("Entry in simple entries was not SimpleCreationEntry. source:"+entry.getObjectSource()+", target:"+entry.getObjectTarget()+", created"+entry.getObjectCreated());
 			}
 		}
 
 		for (CreationEntry entry : CreationMatrix.getInstance().getAdvancedEntries()) {
-			if(entry instanceof AdvancedCreationEntry) {
+			if (entry instanceof AdvancedCreationEntry) {
 				AdvancedCreationEntry advanced = (AdvancedCreationEntry) entry;
-				if(advanced.getObjectSource() == ItemList.anvilSmall) {
+				if (advanced.getObjectSource() == ItemList.anvilSmall) {
 					try {
-						float percentageLost = ReflectionUtil.getPrivateField(advanced, ReflectionUtil.getField(AdvancedCreationEntry.class, "percentageLost"));
-						AdvancedCreationEntry advancedNew = CreationEntryCreator.createAdvancedEntry(advanced.getPrimarySkill(), shopAnvilId, advanced.getObjectTarget(), advanced.getObjectCreated(), advanced.depleteSource, advanced.depleteTarget, percentageLost, advanced.depleteEqually, advanced.isCreateOnGround(), advanced.getCustomCutOffChance(), advanced.getMinimumSkillRequirement(), advanced.getCategory());
+						float percentageLost = ReflectionUtil.getPrivateField(advanced,
+								ReflectionUtil.getField(AdvancedCreationEntry.class, "percentageLost"));
+						AdvancedCreationEntry advancedNew = CreationEntryCreator.createAdvancedEntry(
+								advanced.getPrimarySkill(), shopAnvilId, advanced.getObjectTarget(),
+								advanced.getObjectCreated(), advanced.depleteSource, advanced.depleteTarget,
+								percentageLost, advanced.depleteEqually, advanced.isCreateOnGround(),
+								advanced.getCustomCutOffChance(), advanced.getMinimumSkillRequirement(),
+								advanced.getCategory());
 						advancedNew.setColouringCreation(advanced.isColouringCreation());
 						advancedNew.setDeityRestriction(advanced.getDeityRestriction());
 						advancedNew.setDepleteFromSource(advanced.getDepleteFromSource());
@@ -146,14 +159,14 @@ public class ShopAnvil
 						for (CreationRequirement requirement : advanced.getRequirements()) {
 							advancedNew.addRequirement(requirement);
 						}
+						this.recipesLoaded++;
 					} catch (NoSuchFieldException | IllegalAccessException e) {
 						throw new HookException(e);
 					}
 				}
-			} else {
-				logger.warning("Entry in advanced entries was not AdvancedCreationEntry. source:"+entry.getObjectSource()+", target:"+entry.getObjectTarget()+", created"+entry.getObjectCreated());
 			}
 		}
+		logger.log(Level.INFO, "Added " + this.recipesLoaded + " crafting recipes that use Shop Anvil.");
 	}
 
 	@Override
